@@ -2,6 +2,7 @@ import numbers
 
 import numpy as np
 
+
 from miniML.activations.Activation_function import Activation
 from miniML.helper.helper import multiply_2D_with_3D
 from miniML.helper.validation import validate_scalar_vector
@@ -290,48 +291,35 @@ class Softmax(Activation):
         """
         m = np.max(x, axis=axis, keepdims=True)
         e = np.exp(x - m)
-        return e / np.sum(e, axis=axis, keepdims=True)
+        return e / e.sum(axis=axis, keepdims=True)
 
     def derivative(self, input_values, activation_output=True, return_as_matrix=False):
         if not activation_output:
             z = self(input_values)
         else:
-            z = input_values
-
-        # Compute the Jacobian matrix of Softmax
+            z = input_values       
 
         # Reshape z if it's 1D to 2D with a single batch
-        # Compute the Jacobian matrix of Softmax
         if np.ndim(z) == 1:
             # If z is a 1D array, reshape it to a 2D array with a single batch
             z = np.expand_dims(z, axis=0)
 
-        # Compute the Jacobian matrix for each batch separately
-        jacobian_matrices = []
-        for i in range(z.shape[0]):
-            jac = np.diag(z[i]) - np.outer(z[i], z[i])
-            jacobian_matrices.append(jac)
-
-        return np.array(jacobian_matrices)
-        # else:
-        #     return np.reshape(jac, (*jac.shape[:-2], -1))
-
-        # # Compute Jacobian matrix of Softmax
-        # # jac = np.einsum('...i,...ij->...ij', z, np.eye(z.shape[-1]) - z)
-        # t1 = np.einsum('...j,...k->...jk', z, -z)
-        # t2 = np.eye(z.shape[0]) * np.ones(t1.shape)
-        # jac = t1+t2
-        # return jac
+        # Compute the Jacobian matrix of Softmax
+        m, n = z.shape
+        iden = np.eye(n)
+        t1 = np.zeros((m, n, n), dtype=np.float64)
+        t2 = np.zeros((m, n, n), dtype=np.float64)
+        t1 = np.einsum('ij,jk->ijk', z, iden)
+        t2 = np.einsum('ij,ik->ijk', z, z)
+        return t1 - t2
 
     def back_propagation(self, gradient, x, activation_output=True):
         super().back_propagation(gradient, x, activation_output)
-        z = x
-        if not activation_output:
-            z = self(x)
+        
         g = gradient
         if np.ndim(gradient) == 1:
             # reshape it to a 2D array with a single batch
             g = np.expand_dims(gradient, axis=0)
 
-        dz = self.derivative(x,activation_output=activation_output)
+        dz = self.derivative(x, activation_output=activation_output)
         return multiply_2D_with_3D(g, dz)
