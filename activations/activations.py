@@ -1,38 +1,337 @@
+import numbers
+
 import numpy as np
 
-
-def linear(x):
-    return x
-
-
-@np.vectorize
-def sigmoid(x):
-    if x >= 0:
-        return 1 / (1 + np.exp(-x))
-    else:
-        z = np.exp(x)
-        return z / (1 + z)
+from miniML.activations.Activation_function import Activation
+from miniML.helper.helper import multiply_2D_with_3D
+from miniML.helper.validation import validate_scalar_vector
 
 
-def tanh(x):
-    return np.tanh(x)
+class Linear(Activation):
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+
+    def __call__(self, x):
+        return x
+
+    def derivative(self, input_values, return_as_matrix=False, **kwargs):
+        """
+        Compute the derivative of the linear activation function.
+
+        :param input_values: The input value(s) at which to compute the derivative.
+        :type input_values: numeric or array-like
+        :param return_as_matrix: If True, returns the derivative as a 2-D matrix.
+                                 Defaults to False, returning a 1-D array when False.
+        :type return_as_matrix: bool, optional
+
+        :return: The derivative(s) of the linear activation function.
+        :rtype: numeric or array-like
+
+        :raises ValueError: If input_values is not a valid vector.
+        """
+        if isinstance(input_values, numbers.Number):
+            return 1
+        if self.check_validity:
+            validate_scalar_vector(input_values)
+        if not return_as_matrix:
+            return np.ones(np.shape(input_values), dtype=input_values.dtype)
+        else:
+            return np.eye(np.size(input_values), dtype=input_values.dtype)
+
+    def back_propagation(self, gradient, **kwargs):
+        return gradient
 
 
-def softmax(values: np.ndarray, axis=-1) -> np.ndarray:
-    m = np.max(values, axis=axis, keepdims=True)
-    e = np.exp(values - m)
-    return e / np.sum(e, axis=axis, keepdims=True)
+class Sigmoid(Activation):
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+
+    def __call__(self, x):
+        return self._sigmoid(x)
+
+    @staticmethod
+    def _sigmoid(x):
+        """
+        Compute the sigmoid function element-wise.
+
+        :param x: Input array.
+        :type x: array-like
+
+        :return: Output array of sigmoid function applied element-wise.
+        :rtype: ndarray
+
+        """
+        return 1.0 / (1.0 + np.exp(-x))
+
+    def derivative(self, input_values, return_as_matrix=False, activation_output=False):
+        if not activation_output:
+            z = self(input_values)
+        else:
+            z = input_values
+
+        if isinstance(z, numbers.Number):
+            z = np.array(z)
+
+        dz = z * (1.0 - z)
+        if self.check_validity:
+            validate_scalar_vector(input_values)
+
+        if not return_as_matrix:
+            return dz
+        else:
+            return np.diagflat(dz)
+
+    def back_propagation(self, gradient, x, activation_output=True):
+        super().back_propagation(gradient, x, activation_output)
+        z = x
+        if not activation_output:
+            z = self(x)
+
+        dz = z * (1.0 - z)
+        return gradient * dz
 
 
-def relu(x):
-    return np.maximum(0, x)
+class Tanh(Activation):
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+
+    def __call__(self, x):
+        return self._tanh(x)
+
+    @staticmethod
+    def _tanh(x):
+        return np.tanh(x)
+
+    def derivative(self, input_values, return_as_matrix=False, activation_output=False):
+        if not activation_output:
+            z = self(input_values)
+        else:
+            z = input_values
+
+        if isinstance(z, numbers.Number):
+            z = np.array(z)
+
+        dz = 1.0 - z * z
+
+        if self.check_validity:
+            validate_scalar_vector(input_values)
+
+        if not return_as_matrix:
+            return dz
+        else:
+            return np.diagflat(dz)
+
+    def back_propagation(self, gradient, x, activation_output=True):
+        super().back_propagation(gradient, x, activation_output)
+        z = x
+        if not activation_output:
+            z = self(x)
+
+        dz = 1.0 - z * z
+        return gradient * dz
 
 
-def relu6(x):
-    return np.minimum(np.maximum(0, x), 6)
+class ReLU(Activation):
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+
+    def __call__(self, x):
+        return self._relu(x)
+
+    @staticmethod
+    def _relu(x):
+        """
+        Compute the Rectified Linear Unit (ReLU) function element-wise.
+
+        :param x: Input array.
+        :type x: array-like
+
+        :return: Output array after applying ReLU function element-wise.
+        :rtype: ndarray
+        """
+        return np.maximum(0, x)
+
+    def derivative(self, input_values, return_as_matrix=False, **kwargs):
+        z = input_values
+        if isinstance(z, numbers.Number):
+            z = np.array(z)
+
+        dz = (z > 0) * 1  # np.where(z > 0, 1.0, 0.0)  # Derivative of ReLU
+
+        if self.check_validity:
+            validate_scalar_vector(input_values)
+
+        if not return_as_matrix:
+            return dz
+        else:
+            return np.diagflat(dz)
+
+    def back_propagation(self, gradient, x, **kwarg):
+        super().back_propagation(gradient, x, **kwarg)
+        dz = (x > 0) * 1
+        return gradient * dz
 
 
-@np.vectorize
-def leaky_relu(x, alpha=0.01):
-    return alpha * x if x <= 0 else x
+class ReLU6(Activation):
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
 
+    def __call__(self, x):
+        return self._relu6(x)
+
+    @staticmethod
+    def _relu6(x):
+        """
+        Compute the ReLU6 function element-wise.
+
+        :param x: Input array.
+        :type x: array-like
+
+        :return: Output array after applying ReLU6 function element-wise.
+        :rtype: ndarray
+        """
+        _t = np.minimum(np.maximum(0, x), 6)
+
+        if isinstance(x, np.ndarray) and np.ndim(_t) == 0:
+            _t = np.array(_t)
+        return _t
+
+    def derivative(self, input_values, return_as_matrix=False, **kwargs):
+        z = input_values
+
+        if isinstance(z, numbers.Number):
+            z = np.array(z)
+
+        dz = ((z > 0) & (z < 6)) * 1  # np.where((z > 0) & (z <= 6), 1, 0)  # Derivative of ReLU6
+        if isinstance(input_values, np.ndarray) and np.ndim(z) == 0:
+            return np.array(dz)
+
+        if self.check_validity:
+            validate_scalar_vector(input_values)
+
+        if not return_as_matrix:
+            return dz
+        else:
+            return np.diagflat(dz)
+
+    def back_propagation(self, gradient, x, **kwarg):
+        super().back_propagation(gradient, x, **kwarg)
+        dz = ((x > 0) & (x < 6)) * 1
+        return gradient * dz
+
+
+class LeakyReLU(Activation):
+    def __init__(self, *, alpha: float = 0.01, **kwargs):
+        """
+        Initialize the LeakyReLU activation function.
+
+        :param alpha: Slope of the negative part, typically a small positive value.
+        :type alpha: float
+        """
+        super().__init__(**kwargs)
+        self.alpha = alpha
+
+    def __call__(self, x):
+        return self._leaky_relu(x)
+
+    def _leaky_relu(self, x):
+        """
+        Compute the Leaky ReLU function element-wise.
+
+        :param x: Input array.
+        :type x: array-like
+
+        :return: Output array after applying Leaky ReLU function element-wise.
+        :rtype: ndarray
+        """
+        # if isinstance(x, numbers.Number):
+        #     return x if x > 0 else self.alpha * x
+
+        return np.where(x > 0, x, self.alpha * x)
+
+    def derivative(self, input_values, return_as_matrix=False, **kwargs):
+        z = input_values
+        if isinstance(z, numbers.Number):
+            z = np.array(z)
+
+        dz = np.where(z > 0, 1.0, self.alpha)  # Derivative of Leaky ReLU
+        if self.check_validity:
+            validate_scalar_vector(input_values)
+
+        if not return_as_matrix:
+            return dz
+        else:
+            return np.diagflat(dz)
+
+    def back_propagation(self, gradient, x, **kwarg):
+        super().back_propagation(gradient, x, **kwarg)
+        dz = np.where(x > 0, 1.0, self.alpha)
+        return gradient * dz
+
+
+class Softmax(Activation):
+    def __init__(self, axis=-1, **kwargs):
+        super().__init__(**kwargs)
+        self.axis = axis
+
+    def __call__(self, x):
+        return self._softmax(x, axis=self.axis)
+
+    @staticmethod
+    def _softmax(x: np.ndarray, axis=-1) -> np.ndarray:
+        """
+        Compute the softmax function element-wise.
+
+        :param x: Input array.
+        :type x: array-like
+
+        :return: Output array of softmax function applied element-wise.
+        :rtype: ndarray
+        """
+        m = np.max(x, axis=axis, keepdims=True)
+        e = np.exp(x - m)
+        return e / np.sum(e, axis=axis, keepdims=True)
+
+    def derivative(self, input_values, activation_output=True, return_as_matrix=False):
+        if not activation_output:
+            z = self(input_values)
+        else:
+            z = input_values
+
+        # Compute the Jacobian matrix of Softmax
+
+        # Reshape z if it's 1D to 2D with a single batch
+        # Compute the Jacobian matrix of Softmax
+        if np.ndim(z) == 1:
+            # If z is a 1D array, reshape it to a 2D array with a single batch
+            z = np.expand_dims(z, axis=0)
+
+        # Compute the Jacobian matrix for each batch separately
+        jacobian_matrices = []
+        for i in range(z.shape[0]):
+            jac = np.diag(z[i]) - np.outer(z[i], z[i])
+            jacobian_matrices.append(jac)
+
+        return np.array(jacobian_matrices)
+        # else:
+        #     return np.reshape(jac, (*jac.shape[:-2], -1))
+
+        # # Compute Jacobian matrix of Softmax
+        # # jac = np.einsum('...i,...ij->...ij', z, np.eye(z.shape[-1]) - z)
+        # t1 = np.einsum('...j,...k->...jk', z, -z)
+        # t2 = np.eye(z.shape[0]) * np.ones(t1.shape)
+        # jac = t1+t2
+        # return jac
+
+    def back_propagation(self, gradient, x, activation_output=True):
+        super().back_propagation(gradient, x, activation_output)
+        z = x
+        if not activation_output:
+            z = self(x)
+        g = gradient
+        if np.ndim(gradient) == 1:
+            # reshape it to a 2D array with a single batch
+            g = np.expand_dims(gradient, axis=0)
+
+        dz = self.derivative(x,activation_output=activation_output)
+        return multiply_2D_with_3D(g, dz)
