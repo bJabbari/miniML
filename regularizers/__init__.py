@@ -1,10 +1,11 @@
+from typing import Union, Optional
 from .regularizers import Regularizer, L1, L2, L1L2
 
 all_regularizers = [L1, L2, L1L2]
 all_regularizers_map = {r.__name__.lower(): r for r in all_regularizers}
 
 
-def get(regularizer):
+def get(regularizer: Union[str, Regularizer, None]) -> Optional[Regularizer]:
     if regularizer is None:
         return None
     elif isinstance(regularizer, str):

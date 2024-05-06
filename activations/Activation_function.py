@@ -68,5 +68,3 @@ Compute the derivative of the activation function.
         if not isinstance(x, np.ndarray):
             raise TypeError('x must be a numpy array')
 
-
-        pass

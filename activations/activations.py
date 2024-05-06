@@ -39,7 +39,7 @@ class Linear(Activation):
         else:
             return np.eye(np.size(input_values), dtype=input_values.dtype)
 
-    def back_propagation(self, gradient, **kwargs):
+    def back_propagation(self, gradient, x,  **kwargs):
         return gradient
 
 
