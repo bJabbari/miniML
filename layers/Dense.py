@@ -130,7 +130,7 @@ class Dense(Layer):
             delta_weight += self._weight_regularize.backward(self.weight)
         self.weight = self.weight - learning_rate * delta_weight
         # update biases
-        delta_bias = np.mean(grad, axis=0)
+        delta_bias = np.mean(grad, axis=0, keepdims=True)
         if self._bias_regularize is not None:
             delta_bias += self._bias_regularize.backward(self.bias)
         self.bias = self.bias - learning_rate * delta_bias
