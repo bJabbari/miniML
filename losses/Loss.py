@@ -25,10 +25,11 @@ class Loss(ABC):
             self.y_pred = y_pred
 
         if self.y_true.shape != self.y_pred.shape:
-            raise ValueError(f"y_true and y_pred must have the same shape.")
+            raise ValueError(f"y_true and y_pred must have the same shape."
+                             f"Received: y_true shape: {self.y_true.shape}, y_pred shape: {self.y_pred.shape}")
+
         # Check if dtype is numeric with precision less than float64
         if np.issubdtype(self.y_pred.dtype, np.floating) and np.finfo(self.y_pred.dtype).bits < 64:
-            # Convert to float64
             self.y_pred = self.y_pred.astype(np.float64)
         self.n_batches = self.y_pred.shape[0]
 
