@@ -31,9 +31,8 @@ class BinaryCrossentropy(Loss):
 
     def gradient(self):
         super().gradient()
-        t = (self.y_pred - self.y_true) / self.n_batches
         if self.from_logits:
-            return t
+            return (self.y_pred - self.y_true) / self.n_batches
         else:
             epsilon = self.eps  # to avoid division by zero
             _y_pred = np.clip(self.y_pred, epsilon, 1.0 - epsilon)
