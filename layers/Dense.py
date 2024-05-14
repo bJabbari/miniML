@@ -155,3 +155,6 @@ class Dense(Layer):
         propagated_grad = np.matmul(grad, self.weight.T)  # grad.shape is m * self.units
 
         return propagated_grad
+
+    def compute_output_shape(self, input_shape) -> tuple:
+        return *input_shape[:-1], self.units
