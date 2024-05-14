@@ -23,8 +23,9 @@ class Dense(Layer):
         super().__init__(**kwargs)
 
         self.units = units
-        self.input_shape = input_shape
         self.output_shape = None
+        self.batch_size = None
+        self.input_shape = input_shape
 
         self.activations_function = activations.get(activation)
         self._weight_initializer = weight_initializer
@@ -63,19 +64,27 @@ class Dense(Layer):
         if value is None:
             self._input_shape = None
         elif isinstance(value, int) and value > 0:
-            self._input_shape = (1, value)
+            self._input_shape = (None, value)
         elif hasattr(value, '__len__'):
             if len(value) > 2:
                 raise ValueError(
                     f"for dense layer, input dimension can not be more than 2. input shape received is: {len(value)}")
+            if len(value) == 0:
+                raise ValueError(f"for dense layer, input shape can not be an empty sequence.")
             if isinstance(value, tuple):
                 if all(isinstance(v, int) and v > 0 for v in value):
-                    self._input_shape = value
+                    if len(value) == 1:
+                        self._input_shape = (None, *value)
+                    elif len(value) == 2:
+                        self._input_shape = value
                 else:
                     raise ValueError(f'All elements of input_shape tuple must be positive integers. Received: {value}')
             elif isinstance(value, np.ndarray):
                 if value.dtype == np.integer and np.all(value > 0):
-                    self._input_shape = tuple(value.tolist())
+                    if value.ndim == 1:
+                        self._input_shape = (None, value[0])
+                    elif value.ndim == 2:
+                        self._input_shape = tuple(value.tolist())
                 else:
                     raise ValueError('All elements of input_shape NumPy array must be positive integers. '
                                      f'Received: {value}')
@@ -88,6 +97,7 @@ class Dense(Layer):
         self._n_in = self.input_shape[-1]
         self._n_out = self.units
 
+        self.batch_size = self._input_shape[0]
         self.output_shape = (*self._input_shape[:-1], self._n_out)
 
         self.bias = self._bias_initializer(shape=(1, self._n_out))
