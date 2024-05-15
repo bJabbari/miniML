@@ -161,3 +161,14 @@ class Dense(Layer):
 
     def compute_output_shape(self, input_shape) -> tuple:
         return *input_shape[:-1], self.units
+
+    def compute_number_of_parameters(self):
+        total_params = ((self.input_shape[-1] + 1) * self.units)
+        trainable_params = ((self.input_shape[-1] + 1) * self.units)
+        non_trainable_params = total_params - trainable_params
+        ret_dict = {
+            'total_params': total_params,
+            'trainable_params': trainable_params,
+            'non_trainable_params': non_trainable_params
+        }
+        return ret_dict
