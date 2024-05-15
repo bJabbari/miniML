@@ -72,39 +72,29 @@ class Dense(Layer):
             self._input_shape = None
         elif isinstance(value, int) and value > 0:
             self._input_shape = (self.batch_size, value)
-        elif hasattr(value, '__len__'):
+        elif isinstance(value, (tuple, list)):
             if len(value) > 2:
                 raise ValueError(
                     f"for dense layer, input dimension can not be more than 2. input shape received is: {len(value)}")
-            if len(value) == 0:
+            elif len(value) == 0:
                 raise ValueError(f"for dense layer, input shape can not be an empty sequence.")
-            if isinstance(value, tuple):
-                if all(isinstance(v, int) and v > 0 for v in value):
-                    if len(value) == 1:
-                        self._input_shape = (self.batch_size, *value)
-                    elif len(value) == 2:
-                        self._input_shape = value
-                else:
-                    raise ValueError(f'All elements of input_shape tuple must be positive integers. Received: {value}')
-            elif isinstance(value, list):
-                if all(isinstance(v, int) and v > 0 for v in value):
-                    if len(value) == 1:
-                        self._input_shape = (self.batch_size, value[0])
-                    elif len(value) == 2:
-                        self._input_shape = tuple(value)
-                else:
-                    raise ValueError(f'All elements of input_shape list must be positive integers. Received: {value}')
-            elif isinstance(value, np.ndarray):
-                if value.dtype == np.integer and np.all(value > 0):
-                    if len(value) == 1:
-                        self._input_shape = (self.batch_size, value[0])
-                    elif len(value) == 2:
-                        self._input_shape = tuple(value.tolist())
-                else:
-                    raise ValueError('All elements of input_shape NumPy array must be positive integers. '
-                                     f'Received: {value}')
+
+            v = value[0]
+            if not (v is None or (isinstance(v, int) and v > 0)) or not all(
+                    isinstance(v, int) and v > 0 for v in value[1:]):
+                raise ValueError(f'All elements of shape must be positive integers. Received: {value}')
+
+            if len(value) == 1:
+                self._input_shape = (self.batch_size, value[0])
+            elif len(value) == 2:
+                self._input_shape = tuple(value)
+                if self.batch_size is None:
+                    self.batch_size = value[0]
+                elif self.batch_size != value[0]:
+                    raise ValueError(f"batch size doesn't match the input size. please remove batch size"
+                                     f" argument or provide shape as a scalar value")
         else:
-            raise TypeError('input shape can be an integer, a tuple, or a NumPy array of integers.')
+            raise TypeError('input shape can be an integer, tuple or list of integers.')
 
     def build(self, input_shape):
         if self.input_shape is None:
