@@ -1,3 +1,5 @@
+import warnings
+
 import numpy as np
 from typing import Union
 from miniML.layers import Layer
@@ -11,7 +13,7 @@ import miniML.regularizers as regularizers
 class Dense(Layer):
     def __init__(self, units: int,
                  activation: str = None,
-                 input_shape: Union[int, tuple, np.ndarray] = None,
+                 shape: Union[int, tuple, list, np.ndarray] = None,
                  weight_initializer=GlorotNormal(),
                  bias_initializer=Zeros(),
                  weight_regularize=None,
@@ -24,8 +26,13 @@ class Dense(Layer):
 
         self.units = units
         self.output_shape = None
-        self.batch_size = None
-        self.input_shape = input_shape
+        self.input_shape = shape
+        if 'input_shape' in kwargs:
+            warnings.warn('Please use \'shape\' instead of \'input_shape\' when defining dense layer.')
+            if self.input_shape is None and kwargs['input_shape']:
+                self.input_shape = kwargs['input_shape']
+        if self.input_shape is not None:
+            self.output_shape = (*self._input_shape[:-1], self.units)
 
         self.activations_function = activations.get(activation)
         self._weight_initializer = weight_initializer
@@ -64,7 +71,7 @@ class Dense(Layer):
         if value is None:
             self._input_shape = None
         elif isinstance(value, int) and value > 0:
-            self._input_shape = (None, value)
+            self._input_shape = (self.batch_size, value)
         elif hasattr(value, '__len__'):
             if len(value) > 2:
                 raise ValueError(
@@ -74,37 +81,43 @@ class Dense(Layer):
             if isinstance(value, tuple):
                 if all(isinstance(v, int) and v > 0 for v in value):
                     if len(value) == 1:
-                        self._input_shape = (None, *value)
+                        self._input_shape = (self.batch_size, *value)
                     elif len(value) == 2:
                         self._input_shape = value
                 else:
                     raise ValueError(f'All elements of input_shape tuple must be positive integers. Received: {value}')
+            elif isinstance(value, list):
+                if all(isinstance(v, int) and v > 0 for v in value):
+                    if len(value) == 1:
+                        self._input_shape = (self.batch_size, value[0])
+                    elif len(value) == 2:
+                        self._input_shape = tuple(value)
+                else:
+                    raise ValueError(f'All elements of input_shape list must be positive integers. Received: {value}')
             elif isinstance(value, np.ndarray):
                 if value.dtype == np.integer and np.all(value > 0):
-                    if value.ndim == 1:
-                        self._input_shape = (None, value[0])
-                    elif value.ndim == 2:
+                    if len(value) == 1:
+                        self._input_shape = (self.batch_size, value[0])
+                    elif len(value) == 2:
                         self._input_shape = tuple(value.tolist())
                 else:
                     raise ValueError('All elements of input_shape NumPy array must be positive integers. '
                                      f'Received: {value}')
         else:
-            raise TypeError('input_shape must be an integer, a tuple, or a NumPy array of integers.')
+            raise TypeError('input shape can be an integer, a tuple, or a NumPy array of integers.')
 
     def build(self, input_shape):
-        self.input_shape = input_shape
+        if self.input_shape is None:
+            self.input_shape = input_shape[-1]
+            self.output_shape = (*self.input_shape[:-1], self.units)
 
         self._n_in = self.input_shape[-1]
         self._n_out = self.units
-
-        self.batch_size = self._input_shape[0]
-        self.output_shape = (*self._input_shape[:-1], self._n_out)
-
         self.bias = self._bias_initializer(shape=(1, self._n_out))
         self.weight = self._weight_initializer(shape=(self._n_in, self._n_out))
 
     def __call__(self, input_values: np.ndarray):
-        if self.input_shape and self.input_shape != np.shape(input_values):
+        if self.input_shape and self.input_shape[-1] != np.shape(input_values)[-1]:
             raise ValueError(f'this layer expects input with the shape'
                              f' of {self.input_shape} but received inputs with the shape '
                              f' of {np.shape(input_values)}')
