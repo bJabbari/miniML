@@ -1,12 +1,12 @@
 from typing import Union, Optional
 
 from .Loss import Loss
-from .MeanSquaredError import MeanSqauredError
+from .MeanSquaredError import MeanSquaredError
 from .MeanAbsoluteError import MeanAbsoluteError
 from .BinaryCrossentropy import BinaryCrossentropy
 from .CategoricalCrossentropy import CategoricalCrossentropy
 
-all_losses = [MeanSqauredError, MeanAbsoluteError, BinaryCrossentropy, CategoricalCrossentropy]
+all_losses = [MeanSquaredError, MeanAbsoluteError, BinaryCrossentropy, CategoricalCrossentropy]
 all_losses_map = {a.__name__.lower(): a for a in all_losses}
 all_losses_map.update(
     {

@@ -2,7 +2,7 @@ import numpy as np
 from miniML.losses import Loss
 
 
-class MeanSqauredError(Loss):
+class MeanSquaredError(Loss):
     def __init__(self):
         super().__init__()
 
