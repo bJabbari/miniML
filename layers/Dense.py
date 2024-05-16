@@ -124,6 +124,12 @@ class Dense(Layer):
         self.z = np.matmul(input_values, self.weight) + self.bias
         self.output = self.activations_function(self.z)
 
+        # Regularization loss
+        if self._weight_regularize is not None:
+            self.loss = self._weight_regularize(self.weight)
+        if self._bias_regularize is not None:
+            self.loss = self._bias_regularize(self.bias)
+
         return self.output
 
     def update_weights(self, gradient: np.ndarray, learning_rate=1.0e-3):
@@ -147,12 +153,6 @@ class Dense(Layer):
         if self._bias_regularize is not None:
             delta_bias += self._bias_regularize.backward(self.bias)
         self.bias = self.bias - learning_rate * delta_bias
-
-        # Regularization loss
-        if self._weight_regularize is not None:
-            self.loss = self._weight_regularize(self.weight)
-        if self._bias_regularize is not None:
-            self.loss = self._bias_regularize(self.bias)
 
         # back propagated gradient to previous layer
         propagated_grad = np.matmul(grad, self.weight.T)  # grad.shape is m * self.units
