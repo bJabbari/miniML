@@ -98,13 +98,14 @@ class Dense(Layer):
 
     def build(self, input_shape):
         if self.input_shape is None:
-            self.input_shape = input_shape[-1]
+            self.input_shape = input_shape
             self.output_shape = (*self.input_shape[:-1], self.units)
 
         self._n_in = self.input_shape[-1]
         self._n_out = self.units
         self.bias = self._bias_initializer(shape=(1, self._n_out))
         self.weight = self._weight_initializer(shape=(self._n_in, self._n_out))
+        self._is_called = True
 
     def __call__(self, input_values: np.ndarray, training: bool = False):
         if self.input_shape and self.input_shape[-1] != np.shape(input_values)[-1]:
@@ -114,7 +115,7 @@ class Dense(Layer):
 
         if not self._is_called:
             self.build(np.shape(input_values))
-            self._is_called = True
+
 
         self.input = input_values
         # always convert input vector to a 2D array, to do operation like matrix transpose correctly
