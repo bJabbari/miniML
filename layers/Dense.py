@@ -106,7 +106,7 @@ class Dense(Layer):
         self.bias = self._bias_initializer(shape=(1, self._n_out))
         self.weight = self._weight_initializer(shape=(self._n_in, self._n_out))
 
-    def __call__(self, input_values: np.ndarray):
+    def __call__(self, input_values: np.ndarray, training: bool = False):
         if self.input_shape and self.input_shape[-1] != np.shape(input_values)[-1]:
             raise ValueError(f'this layer expects input with the shape'
                              f' of {self.input_shape} but received inputs with the shape '
@@ -130,7 +130,13 @@ class Dense(Layer):
         if self._bias_regularize is not None:
             self.loss = self._bias_regularize(self.bias)
 
-        return self.output
+        res = self.output
+        if not training:
+            self.input = None
+            self.z = None
+            self.output = None
+
+        return res
 
     def update_weights(self, gradient: np.ndarray, learning_rate=1.0e-3):
         # input gradient.shape should be m * self.units; where m is number of batches

@@ -27,3 +27,6 @@ class InputLayer(Layer):
             self._input_shape = (self.batch_size,) + tuple(value)
         else:
             raise TypeError('input_shape must be an integer, a tuple, or a list of integers.')
+
+    def __call__(self, input_values: np.ndarray,*args, **kwargs):
+        return input_values
