@@ -116,7 +116,6 @@ class Dense(Layer):
         if not self._is_called:
             self.build(np.shape(input_values))
 
-
         self.input = input_values
         # always convert input vector to a 2D array, to do operation like matrix transpose correctly
         if self.input.ndim == 0:
@@ -150,6 +149,9 @@ class Dense(Layer):
                                                           self.output,
                                                           activation_output=True)
 
+        # back propagated gradient to previous layer
+        propagated_grad = np.matmul(grad, self.weight.T)  # grad.shape is m * self.units
+
         # update weights
         delta_weight = np.matmul(self.input.T, grad) / float(n_batches)
         if self._weight_regularize is not None:
@@ -160,9 +162,6 @@ class Dense(Layer):
         if self._bias_regularize is not None:
             delta_bias += self._bias_regularize.backward(self.bias)
         self.bias = self.bias - learning_rate * delta_bias
-
-        # back propagated gradient to previous layer
-        propagated_grad = np.matmul(grad, self.weight.T)  # grad.shape is m * self.units
 
         return propagated_grad
 
