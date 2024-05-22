@@ -49,8 +49,11 @@ class Sequential(Model):
             x = layer(x, *args, **kwargs)
         return x
 
-    def compile(self, loss='mse'):
+    def compile(self, loss='mse', optimizer='adam'):
         self.loss_function = miniML.losses.get(loss)
+        self.optimizer = miniML.optimizers.get(optimizer)
+
+
 
     def fit(self, x, y,
             batch_size=None,
@@ -85,9 +88,15 @@ class Sequential(Model):
                 loss = self.loss_function(y_true=yb, y_pred=y_pred)
                 loss_regularization = 0
                 delta = self.loss_function.gradient()
+                grads_and_params = []
                 for layer in self._layers[-1:0:-1]:
                     loss_regularization += layer.loss
-                    delta = layer.update_weights(delta, learning_rate=1e-2)  # TODO implement optimizer
+                    delta, gradients_variables = layer.backward(delta)  # TODO implement optimizer
+                    grads_and_params.extend(gradients_variables)
+
+                self.optimizer.update(grads_and_params, in_place = True)
+                #does it update wights in layers or I need to use a loop
+
 
                 if is_verbose:
                     seen_samples += xb.shape[0]

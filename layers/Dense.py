@@ -138,7 +138,7 @@ class Dense(Layer):
 
         return res
 
-    def update_weights(self, gradient: np.ndarray, learning_rate=1.0e-3):
+    def backward(self, gradient: np.ndarray):
         # input gradient.shape should be m * self.units; where m is number of batches
         n_batches = gradient.shape[0]
         if gradient.ndim == 0:
@@ -156,14 +156,18 @@ class Dense(Layer):
         delta_weight = np.matmul(self.input.T, grad) / float(n_batches)
         if self._weight_regularize is not None:
             delta_weight += self._weight_regularize.backward(self.weight)
-        self.weight = self.weight - learning_rate * delta_weight
+        # self.weight = self.weight - learning_rate * delta_weight
         # update biases
         delta_bias = np.mean(grad, axis=0, keepdims=True)
         if self._bias_regularize is not None:
             delta_bias += self._bias_regularize.backward(self.bias)
-        self.bias = self.bias - learning_rate * delta_bias
+        # self.bias = self.bias - learning_rate * delta_bias
+        gradients_variables = [(delta_weight, self.weight), (delta_bias, self.bias)]
+        return propagated_grad, gradients_variables
 
-        return propagated_grad
+    def update_parameters(self, updated_parameters):
+        self.weight = updated_parameters['weight']
+        self.bias = updated_parameters['bias']
 
     def compute_output_shape(self, input_shape) -> tuple:
         return *input_shape[:-1], self.units
