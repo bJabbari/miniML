@@ -145,7 +145,7 @@ class Sequential(Model):
         return total_loss
 
     def predict(self, x, *args, **kwargs):
-        super().predict(x, args, kwargs)
+        return super().predict(x, *args, **kwargs)
 
     def _name_layer(self, layer: Layer) -> None:
         if 'name' not in layer.__dict__ or not layer.name:
