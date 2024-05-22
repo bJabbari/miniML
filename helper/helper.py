@@ -71,3 +71,10 @@ def multiply_2D_with_3D(matrix_2D, matrix_3D):
         raise ValueError("The first two dimensions of matrix_3D must match the shape of matrix_2D.")
 
     return np.einsum('ij, ijl -> il', matrix_2D, matrix_3D)
+
+
+def float_formatter(value, alignment='>', width=10, precision=4):
+    if 10.0 ** -precision <= abs(value) <= 10.0 ** (width - precision - 2):
+        return f"{value:{alignment}{width}.{precision}f}"
+    else:
+        return f"{value:{alignment}{width}.{precision}e}"
