@@ -19,7 +19,7 @@ class Adam(Optimizer):
         v (List[np.ndarray] or None): List of second moment vectors.
     """
 
-    def __init__(self, learning_rate=1e-3, beta_1=0.9, beta_2=0.999, epsilon=1e-8):
+    def __init__(self, learning_rate=1e-3, beta_1=0.9, beta_2=0.999, epsilon=1e-7):
         """
         Initializes the Adam optimizer with the specified hyperparameters.
         Args:
