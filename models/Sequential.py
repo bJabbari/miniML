@@ -3,6 +3,7 @@ import time
 import numpy as np
 
 import miniML
+from helper.helper import float_formatter
 from miniML.layers import Layer, InputLayer
 from miniML.models import Model
 
@@ -111,7 +112,7 @@ class Sequential(Model):
                     bar = '#' * block + '-' * (bar_length - block)
                     print(
                         f'\r{i + 1}/{num_batches}: |{bar}| {str(int(progress * 100)).rjust(3)}%'
-                        f' - {epoch_time:.1f}s {step_time * 1000:.3f}ms/step - Loss: {step_loss:.4f}',
+                        f' - {epoch_time:.1f}s {step_time * 1000:.2f}ms/step - Loss: {float_formatter(step_loss)}',
                         end='')
 
             # end of one epoch
@@ -122,7 +123,7 @@ class Sequential(Model):
             epoch_loss = self.evaluate(x, y, batch_size, verbose=False)
             print(
                 f'\r{num_batches}/{num_batches}:'
-                f' - {epoch_time:.1f}s {step_time * 1000:.3f}ms/step - Loss: {epoch_loss:.4f}')
+                f' - {epoch_time:.1f}s {step_time * 1000:.2f}ms/step - Loss: {float_formatter(epoch_loss)}')
             # Calculate metrics
 
     def evaluate(self, x, y, batch_size=None, verbose=True):
