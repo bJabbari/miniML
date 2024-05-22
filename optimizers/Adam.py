@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Tuple, Optional
 
 import numpy as np
 
@@ -18,6 +18,7 @@ class Adam(Optimizer):
         m (List[np.ndarray] or None): List of first moment vectors.
         v (List[np.ndarray] or None): List of second moment vectors.
     """
+
     def __init__(self, learning_rate=1e-3, beta_1=0.9, beta_2=0.999, epsilon=1e-8):
         """
         Initializes the Adam optimizer with the specified hyperparameters.
@@ -35,26 +36,30 @@ class Adam(Optimizer):
         self.m = None
         self.v = None
 
-    def update(self, parameters: List[np.ndarray], gradients: List[np.ndarray], in_place=True):
+    def update(self, grads_and_params: List[Tuple[Optional[np.ndarray], Optional[np.ndarray]]], in_place=True) \
+            -> Optional[List[Optional[np.ndarray]]]:
         """
         Updates the parameters using the Adam optimization algorithm
         Args:
-            parameters (List[np.ndarray]): The list of parameters to be updated.
-            gradients (List[np.ndarray]): The list of gradients for each parameter.
+            grads_and_params (list of tuples): Each tuple contains a gradient and its corresponding parameter.
             in_place (bool): If True, update the parameters in place. Otherwise, return a new list of updated parameters
         Returns:
             Union[None, List[np.ndarray]]: None if in_place is True, otherwise a list of updated parameters.
         """
         if self.m is None:
-            self.m = [np.zeros_like(param) for param in parameters]
-            self.v = [np.zeros_like(param) for param in parameters]
+            self.m = [np.zeros_like(param) if param is not None else None for _, param in grads_and_params]
+            self.v = [np.zeros_like(param) if param is not None else None for _, param in grads_and_params]
 
         self.t += 1
-        lr_t = self.learning_rate #* np.sqrt(1 - self.beta2 ** self.t) / (1 - self.beta1 ** self.t)
+        lr_t = self.learning_rate  # * np.sqrt(1 - self.beta2 ** self.t) / (1 - self.beta1 ** self.t)
         if not in_place:
             new_params = []
 
-        for i, (param, grad) in enumerate(zip(parameters, gradients)):
+        for i, (grad, param) in enumerate(grads_and_params):
+            if param is None:  # some layers may not have any trainable parameters
+                if not in_place:
+                    new_params.append(None)
+                continue
             self.m[i] = self.beta1 * self.m[i] + (1 - self.beta1) * grad
             self.v[i] = self.beta2 * self.v[i] + (1 - self.beta2) * (grad ** 2)
             m_hat = self.m[i] / (1 - self.beta1 ** self.t)
