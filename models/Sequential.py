@@ -53,8 +53,6 @@ class Sequential(Model):
         self.loss_function = miniML.losses.get(loss)
         self.optimizer = miniML.optimizers.get(optimizer)
 
-
-
     def fit(self, x, y,
             batch_size=None,
             epochs=1,
@@ -91,12 +89,10 @@ class Sequential(Model):
                 grads_and_params = []
                 for layer in self._layers[-1:0:-1]:
                     loss_regularization += layer.loss
-                    delta, gradients_variables = layer.backward(delta)  # TODO implement optimizer
+                    delta, gradients_variables = layer.backward(delta)
                     grads_and_params.extend(gradients_variables)
 
-                self.optimizer.update(grads_and_params, in_place = True)
-                #does it update wights in layers or I need to use a loop
-
+                self.optimizer.update(grads_and_params, in_place=True)
 
                 if is_verbose:
                     seen_samples += xb.shape[0]
