@@ -53,6 +53,8 @@ class Sequential(Model):
     def compile(self, loss='mse', optimizer='adam'):
         self.loss_function = miniML.losses.get(loss)
         self.optimizer = miniML.optimizers.get(optimizer)
+        if not self._is_build:
+            self.build()
 
     def fit(self, x, y,
             batch_size=None,
