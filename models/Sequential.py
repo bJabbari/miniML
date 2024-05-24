@@ -85,17 +85,11 @@ class Sequential(Model):
             loss_total = 0
 
             for i, (xb, yb) in enumerate(zip(x_batches, y_batches)):
-                y_pred = self.__call__(xb, training=True)
-                loss = self.loss_function(y_true=yb, y_pred=y_pred)
-                loss_regularization = 0
-                delta = self.loss_function.gradient()
-                grads_and_params = []
-                for layer in self._layers[-1:0:-1]:
-                    loss_regularization += layer.loss
-                    delta, gradients_variables = layer.backward(delta)
-                    grads_and_params.extend(gradients_variables)
-
+                if i == 0:
+                    grads_and_params, loss, loss_regularization = self.one_train_step(xb, yb)
                 self.optimizer.update(grads_and_params, in_place=True)
+                # Compute the new value of loss after updating weights, for the current batch
+                grads_and_params, loss, loss_regularization = self.one_train_step(xb, yb)
 
                 if is_verbose:
                     seen_samples += xb.shape[0]
@@ -121,12 +115,24 @@ class Sequential(Model):
             epoch_end_time = time.perf_counter()
             epoch_time = epoch_end_time - epoch_start_time
             step_time = epoch_time / num_batches
-            # Calculate loss
+            # Calculate the value of loss for the  all batches
             epoch_loss = self.evaluate(x, y, batch_size, verbose=False)
             print(
                 f'\r{num_batches}/{num_batches}:'
                 f' - {epoch_time:.1f}s {step_time * 1000:.2f}ms/step - Loss: {float_formatter(epoch_loss)}')
             # Calculate metrics
+
+    def one_train_step(self, xb, yb):
+        y_pred = self.__call__(xb, training=True)
+        loss = self.loss_function(y_true=yb, y_pred=y_pred)
+        loss_regularization = 0
+        delta = self.loss_function.gradient()
+        grads_and_params = []
+        for layer in self._layers[-1:0:-1]:
+            loss_regularization += layer.loss
+            delta, gradients_variables = layer.backward(delta)
+            grads_and_params.extend(gradients_variables)
+        return grads_and_params, loss, loss_regularization
 
     def evaluate(self, x, y, batch_size=None, verbose=True):
         x_batches, y_batches = self.shuffle_and_batch(x, y, batch_size=batch_size, shuffle=False)
