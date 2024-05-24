@@ -165,7 +165,6 @@ class Sequential(Model):
     def shuffle_and_batch(x: np.ndarray, y: np.ndarray, batch_size: int, shuffle: bool = True, ) -> object:
         if y.ndim == 1:
             y = y.reshape(-1, 1)
-            print()
         if x.shape[0] != y.shape[0]:
             raise ValueError("Input and output arrays must have the same number of samples")
 
