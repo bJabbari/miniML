@@ -23,22 +23,22 @@ class BinaryCrossentropy(Loss):
         super().__call__(y_true, y_pred)
         if self.from_logits:
             self.y_pred = self._sigmoid(self.y_pred)  # convert logits to probability
-            return -np.mean(np.sum(
+            return -np.mean(np.mean(
                 self.y_true * np.log(self.y_pred) + (1 - self.y_true) * np.log(1 - self.y_pred), axis=-1),
                 axis=None)
         _y_pred = np.clip(self.y_pred, self.eps, 1.0 - self.eps, dtype=np.float64)
-        return -np.mean(np.sum(
+        return -np.mean(np.mean(
             self.y_true * np.log(_y_pred + self.eps) + (1.0 - self.y_true) * np.log(1.0 - _y_pred + self.eps), axis=-1),
             axis=None)
 
     def gradient(self):
         super().gradient()
         if self.from_logits:
-            return (self.y_pred - self.y_true) / self.n_batches
+            return (self.y_pred - self.y_true) / np.prod(self.y_pred.shape)
         else:
             epsilon = self.eps  # to avoid division by zero
             _y_pred = np.clip(self.y_pred, epsilon, 1.0 - epsilon)
-            t = np.where(self.y_true == 0, 1.0 / (1 - _y_pred), -1.0 / _y_pred) / self.n_batches
+            t = np.where(self.y_true == 0, 1.0 / (1 - _y_pred), -1.0 / _y_pred) / np.prod(self.y_pred.shape)
 
             return t
 

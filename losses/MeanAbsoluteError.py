@@ -8,8 +8,8 @@ class MeanAbsoluteError(Loss):
 
     def __call__(self, y_true, y_pred):
         super().__call__(y_true, y_pred)
-        return np.mean(np.sum(np.abs(y_pred - y_true), axis=-1), axis=None)
+        return np.mean(np.mean(np.abs(y_pred - y_true), axis=-1), axis=None)
 
     def gradient(self):
         super().gradient()
-        return np.sign(self.y_pred - self.y_true) / self.n_batches
+        return np.sign(self.y_pred - self.y_true) / np.prod(self.y_pred.shape)
