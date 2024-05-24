@@ -184,7 +184,7 @@ class Sequential(Model):
             x_batches = np.array_split(x_shuffled, num_batches)
             y_batches = np.array_split(y_shuffled, num_batches)
         else:
-            x_batches = x_shuffled
-            y_batches = y_shuffled
+            x_batches = [x_shuffled]
+            y_batches = [y_shuffled]
 
         return x_batches, y_batches

@@ -8,8 +8,8 @@ class MeanSquaredError(Loss):
 
     def __call__(self, y_true, y_pred):
         super().__call__(y_true, y_pred)
-        return np.mean(np.square(y_pred - y_true), axis=None)
+        return np.mean(np.sum(np.square(y_pred - y_true), axis=-1), axis=None)
 
     def gradient(self):
         super().gradient()
-        return (self.y_pred - self.y_true) / 2.0 / self.n_batches
+        return (self.y_pred - self.y_true) * 2.0 / self.n_batches
