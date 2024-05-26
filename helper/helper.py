@@ -73,8 +73,8 @@ def multiply_2D_with_3D(matrix_2D, matrix_3D):
     return np.einsum('ij, ijl -> il', matrix_2D, matrix_3D)
 
 
-def float_formatter(value, alignment='>', width=10, precision=4):
-    if 10.0 ** -precision <= abs(value) <= 10.0 ** (width - precision - 2):
+def float_formatter(value, alignment='<', width=10, precision=4):
+    if 10.0 ** -(precision-1) <= abs(value) <= 10.0 ** (width - precision - 2):
         return f"{value:{alignment}{width}.{precision}f}"
     else:
         return f"{value:{alignment}{width}.{precision}e}"

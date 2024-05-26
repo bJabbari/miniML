@@ -59,68 +59,84 @@ class Sequential(Model):
     def fit(self, x, y,
             batch_size=None,
             epochs=1,
-            # verbose=True,
-            # validation_data=None,
+            verbose=1,
+            validation_data=None,
             shuffle=True,
             initial_epoch=0,
-            # steps_per_epoch=None,
-            # validation_steps=None,
-            # validation_batch_size=None,
+            steps_per_epoch=None,
+            validation_steps=None,
+            validation_batch_size=None,
             # validation_freq=1,
+            compute_epoch_loss=False
             ):
         if not self._is_build:
             self.build()
 
-        is_verbose = True  # Todo
-        bar_length = 30
         if not isinstance(x, np.ndarray) or not isinstance(y, np.ndarray):
             raise ValueError('X and Y should be Numpy array')
-        # total_samples = X.shape[0]
         for epoch in range(initial_epoch, epochs):
-            epoch_start_time = time.perf_counter()
-            print(f'Epoch {epoch + 1}/{epochs}')
+            if verbose:
+                epoch_start_time = time.perf_counter()
+                print(f'Epoch {epoch + 1}/{epochs}')
             seen_samples = 0
             x_batches, y_batches = self.shuffle_and_batch(x, y, batch_size=batch_size, shuffle=shuffle)
-            num_batches = len(x_batches)
+            steps_per_epoch = steps_per_epoch if steps_per_epoch else len(x_batches)
             loss_total = 0
 
             for i, (xb, yb) in enumerate(zip(x_batches, y_batches)):
+                if i >= steps_per_epoch:
+                    break
                 if i == 0:
                     grads_and_params, loss, loss_regularization = self.one_train_step(xb, yb)
                 self.optimizer.update(grads_and_params, in_place=True)
                 # Compute the new value of loss after updating weights, for the current batch
                 grads_and_params, loss, loss_regularization = self.one_train_step(xb, yb)
 
-                if is_verbose:
-                    seen_samples += xb.shape[0]
-                    # Calculate step loss
-                    loss_total += (loss + loss_regularization) * xb.shape[0]
+                seen_samples += xb.shape[0]
+                # Calculate step loss
+                loss_total += (loss + loss_regularization) * xb.shape[0]
+                if verbose == 1:
                     step_loss = loss_total / seen_samples
-
                     # Calculate step time
-                    epoch_end_time = time.perf_counter()
-                    epoch_time = epoch_end_time - epoch_start_time
-                    step_time = epoch_time / (i + 1.0)
+                    step_end_time = time.perf_counter()
+                    total_step_time = step_end_time - epoch_start_time
+                    avg_step_time = total_step_time / (i + 1.0)
                     # Update progress bar
-                    progress = (i + 1) / num_batches
-
-                    block = int(round(bar_length * progress))
-                    bar = '#' * block + '-' * (bar_length - block)
+                    progress_str = self.progress_bar(i, steps_per_epoch)
                     print(
-                        f'\r{i + 1}/{num_batches}: |{bar}| {str(int(progress * 100)).rjust(3)}%'
-                        f' - {epoch_time:.1f}s {step_time * 1000:.2f}ms/step - Loss: {float_formatter(step_loss)}',
+                        f'\r{progress_str}'
+                        f' - {total_step_time:.1f}s {avg_step_time * 1000:.2f}ms/step - Loss: {float_formatter(step_loss)}',
                         end='')
 
             # end of one epoch
-            epoch_end_time = time.perf_counter()
-            epoch_time = epoch_end_time - epoch_start_time
-            step_time = epoch_time / num_batches
-            # Calculate the value of loss for the  all batches
-            epoch_loss = self.evaluate(x, y, batch_size, verbose=False)
-            print(
-                f'\r{num_batches}/{num_batches}:'
-                f' - {epoch_time:.1f}s {step_time * 1000:.2f}ms/step - Loss: {float_formatter(epoch_loss)}')
+            if verbose:
+                epoch_time = time.perf_counter() - epoch_start_time
+                avg_step_time = epoch_time / steps_per_epoch
+            step_loss = loss_total / seen_samples
+            epoch_loss = None
+            val_loss = None
+            if compute_epoch_loss:
+                # Calculate the value of loss for the  all batches
+                epoch_loss = self.evaluate(x, y, batch_size, verbose=0)
+            if validation_data:
+                val_loss = self.evaluate(validation_data[0], validation_data[1],
+                                         batch_size=validation_batch_size,
+                                         steps=validation_steps,
+                                         verbose=0)
             # Calculate metrics
+
+            if verbose in [1, 2]:
+                epoch_end_time = time.perf_counter()
+                epoch_time = epoch_end_time - epoch_start_time
+                print(f'\r{steps_per_epoch}/{steps_per_epoch}:'
+                      f' - {epoch_time:.1f}s/epoch - {avg_step_time * 1000:.2f}ms/step', end='')
+                print(f' - Loss: {float_formatter(step_loss)}', end='')
+                if epoch_loss:
+                    print(f' - train-Loss: {float_formatter(epoch_loss)}', end='')
+                if val_loss:
+                    print(f' - val-Loss: {float_formatter(val_loss)}')
+                else:
+                    print()
 
     def one_train_step(self, xb, yb):
         y_pred = self.__call__(xb, training=True)
@@ -134,23 +150,48 @@ class Sequential(Model):
             grads_and_params.extend(gradients_variables)
         return grads_and_params, loss, loss_regularization
 
-    def evaluate(self, x, y, batch_size=None, verbose=True):
+    def evaluate(self, x, y, batch_size=None, verbose=1, steps=None):
         x_batches, y_batches = self.shuffle_and_batch(x, y, batch_size=batch_size, shuffle=False)
-        total_loss = 0
+        steps = steps if steps else len(x_batches)
+        loss_total = 0
+        seen_samples = 0
+        if verbose:
+            epoch_start_time = time.perf_counter()
 
-        total_samples = x.shape[0]
-        for xb, yb in zip(x_batches, y_batches):
+        for i, (xb, yb) in enumerate(zip(x_batches, y_batches)):
+            if i >= steps:
+                break
             y_pred = self.__call__(xb, training=False)
             loss = self.loss_function(y_true=yb, y_pred=y_pred) * xb.shape[0]
-            total_loss += loss
-        total_loss = total_loss / total_samples
+            loss_total += loss
+            seen_samples += xb.shape[0]
+            if verbose == 1:
+                step_loss = loss_total / seen_samples
+                # Calculate step time
+                step_end_time = time.perf_counter()
+                total_step_time = step_end_time - epoch_start_time
+                avg_step_time = total_step_time / (i + 1.0)
+                # Update progress bar
+                progress_str = self.progress_bar(i, steps)
+                print(
+                    f'\r{progress_str}'
+                    f' - {total_step_time:.1f}s {avg_step_time * 1000:.2f}ms/step - Loss: {float_formatter(step_loss)}',
+                    end='')
+        if verbose:
+            total_steps_time = time.perf_counter() - epoch_start_time
+            avg_step_time = total_steps_time / steps
+        loss_total = loss_total / seen_samples
         loss_regularization = 0
         for layer in self._layers[1:]:
             loss_regularization += layer.loss
-        total_loss += loss_regularization
-        if verbose:
-            print(f'Loss: {total_loss}')
-        return total_loss
+        loss_total += loss_regularization
+        if verbose in [1, 2]:
+            epoch_end_time = time.perf_counter()
+            total_time = epoch_end_time - epoch_start_time
+            print(f'\r{steps}/{steps}:'
+                  f' - {total_time:.1f}s {avg_step_time * 1000:.2f}ms/step - Loss: {float_formatter(loss_total)}')
+
+        return loss_total
 
     def predict(self, x, *args, **kwargs):
         return super().predict(x, *args, **kwargs)
@@ -193,3 +234,11 @@ class Sequential(Model):
             y_batches = [y_shuffled]
 
         return x_batches, y_batches
+
+    @staticmethod
+    def progress_bar(step, total_steps, bar_length=30):
+        progress = (step + 1) / total_steps
+        block = int(round(bar_length * progress))
+        bar = '#' * block + '-' * (bar_length - block)
+        progress_str = f'{step + 1}/{total_steps}: |{bar}| {str(int(progress * 100)).rjust(3)}%'
+        return progress_str
