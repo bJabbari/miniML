@@ -1,3 +1,5 @@
+import numbers
+
 import numpy as np
 
 
@@ -74,7 +76,24 @@ def multiply_2D_with_3D(matrix_2D, matrix_3D):
 
 
 def float_formatter(value, alignment='<', width=10, precision=4):
-    if 10.0 ** -(precision-1) <= abs(value) <= 10.0 ** (width - precision - 2):
+    if 10.0 ** -(precision - 1) <= abs(value) <= 10.0 ** (width - precision - 2):
         return f"{value:{alignment}{width}.{precision}f}"
     else:
         return f"{value:{alignment}{width}.{precision}e}"
+
+
+def is_scalar_vector(value) -> bool:
+    if isinstance(value, numbers.Number):
+        return True
+    if not isinstance(value, np.ndarray):
+        return False
+    else:
+        if np.ndim(value) in [0, 1]:
+            return True
+        elif np.ndim(value) == 2:
+            if any(z == 1 for z in np.shape(value)):
+                return True
+            else:
+                return False
+        else:
+            return False
