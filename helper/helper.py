@@ -83,6 +83,34 @@ def float_formatter(value, alignment='<', width=10, precision=4):
 
 
 def is_scalar_vector(value) -> bool:
+    """
+        Determines if the input value is a scalar, a 1-dimensional array, or a 2-dimensional array
+        with at least one dimension of size 1 (effectively a scalar or vector).
+
+        Args:
+            value: The input value to be checked. It can be a number or a numpy array.
+
+        Returns:
+            bool: True if the input is a scalar, a 1-dimensional array, or a 2-dimensional array
+                  with at least one dimension of size 1. False otherwise.
+
+        Notes:
+            - Scalars include any instances of numbers.Number.
+            - 1-dimensional arrays (vectors) are considered as scalar vectors.
+            - 2-dimensional arrays are considered scalar vectors if one of their dimensions is of size 1.
+
+        Examples:
+            >>> is_scalar_vector(5)
+            True
+            >>> is_scalar_vector(np.array(5))
+            True
+            >>> is_scalar_vector(np.array([1, 2, 3]))
+            True
+            >>> is_scalar_vector(np.array([[1], [2], [3]]))
+            True
+            >>> is_scalar_vector(np.array([[1, 2, 3], [4, 5, 6]]))
+            False
+        """
     if isinstance(value, numbers.Number):
         return True
     if not isinstance(value, np.ndarray):
