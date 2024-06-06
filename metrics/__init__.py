@@ -1,6 +1,6 @@
 from typing import Union, Optional
 
-from .Metric import Metric
+from miniML.metrics.Metric import Metric
 from .AccuracyMetric import AccuracyMetric, binary_accuracy, categorical_accuracy, sparse_categorical_accuracy
 from .RegressionMetric import RegressionMetric, mean_absolute_error, mean_squared_error, root_mean_squared_error
 from .ClassificationMetric import ClassificationMetric, precision, recall, f1_score
