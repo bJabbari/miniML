@@ -8,32 +8,34 @@ from metrics import Metric
 
 # Base Metric class
 class ClassificationMetric(Metric, ABC):
-    def __init__(self, threshold: float = 0.5, average: Optional[str] = 'auto', zero_division=0.0) -> None:
+    def __init__(self, name: str, threshold: float = 0.5, average: Optional[str] = 'auto', zero_division=0.0) -> None:
         """
          Initializes the Metric class with default settings.
 
             Args:
-              threshold (float, optional): The threshold value to convert probabilities into binary predictions.
-                  This parameter is only relevant when `y_pred` contains probabilities instead of integer labels.
-                  If using a loss function with `from_logits=True` (i.e., no sigmoid or softmax applied to predictions),
-                  set this threshold to 0. Defaults to 0.5.
+                name (str): Name of the metric
+                threshold (float, optional): The threshold value to convert probabilities into binary predictions.
+                    This parameter is only relevant when `y_pred` contains probabilities instead of integer labels.
+                    If using a loss function with `from_logits=True` (i.e., no sigmoid or softmax applied to predictions),
+                    set this threshold to 0. Defaults to 0.5.
 
-              average (str, optional): The averaging method to be used. Options include:
-                  - 'auto': For binary classification, returns the result for class `1`. For multiclass or multilabel
-                    problems, it defaults to 'micro' averaging.
-                  - 'binary': Only for binary classification; calculates metrics for class `1`.
-                  - 'micro': Computes metrics globally by counting the total true positives, false negatives, and false positives.
-                  - 'macro': Computes metrics for each label and finds their unweighted mean.
-                  - None: No averaging is applied; metrics for each class are returned separately.
-                  Defaults to 'auto'.
+                average (str, optional): The averaging method to be used. Options include:
+                    - 'auto': For binary classification, returns the result for class `1`. For multiclass or multilabel
+                      problems, it defaults to 'micro' averaging.
+                    - 'binary': Only for binary classification; calculates metrics for class `1`.
+                    - 'micro': Computes metrics globally by counting the total true positives, false negatives, and false positives.
+                    - 'macro': Computes metrics for each label and finds their unweighted mean.
+                    - None: No averaging is applied; metrics for each class are returned separately.
+                    Defaults to 'auto'.
 
-              zero_division (float, optional): Sets the value to be returned when there is a zero division situation (e.g., when
-                  there are no positive cases in precision or recall calculation). Defaults to 0.0.
+                zero_division (float, optional): Sets the value to be returned when there is a zero division situation (e.g., when
+                    there are no positive cases in precision or recall calculation). Defaults to 0.0.
 
         """
         self.true_positives_dict = {}
         self.false_positives_dict = {}
         self.false_negatives_dict = {}
+        self.name = name
         if threshold is not None and (threshold < 0 or threshold >= 1):
             raise ValueError(
                 "Invalid value for argument `threshold`. "
@@ -54,6 +56,7 @@ class ClassificationMetric(Metric, ABC):
                              )
         self.zero_division = zero_division
         self._problem_type = None  # 'binary', 'multiclass', or 'multilabel'
+
 
     def update_state(self, y_true: np.ndarray, y_pred: np.ndarray) -> None:
         """

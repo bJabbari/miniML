@@ -4,6 +4,8 @@ from metrics import RegressionMetric
 
 
 class MeanSquaredError(RegressionMetric):
+    def __init__(self):
+        super().__init__('mse')
     def update_state(self, y_true: np.ndarray, y_pred: np.ndarray) -> None:
         """
         Updates the state with the true and predicted values for mean squared error calculation.

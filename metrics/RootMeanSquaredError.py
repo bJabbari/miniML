@@ -6,7 +6,7 @@ from metrics import MeanSquaredError
 
 class RootMeanSquaredError(RegressionMetric):
     def __init__(self) -> None:
-        super().__init__()
+        super().__init__('rmse')
         self._mse = MeanSquaredError()
 
     def update_state(self, y_true: np.ndarray, y_pred: np.ndarray) -> None:

@@ -7,10 +7,16 @@ from metrics import Metric
 
 # Base Metric class for regression
 class RegressionMetric(Metric, ABC):
-    def __init__(self) -> None:
-        """Initializes the RegressionMetric class with error sums and counts set to zero."""
+    def __init__(self, name: str) -> None:
+        """
+        Initializes the RegressionMetric class with error sums and counts set to zero.
+        Args:
+            name (str): Name of the regression metric
+        """
+        self.name = name
         self.sum_error = 0.0
         self.count = 0
+
 
     def update_state(self, y_true: np.ndarray, y_pred: np.ndarray) -> None:
         """

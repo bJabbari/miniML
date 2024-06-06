@@ -25,7 +25,7 @@ class Recall(ClassificationMetric):
          there are no positive cases). Defaults to 0.0.
 
         """
-        super().__init__(threshold, average, zero_division)
+        super().__init__('recall', threshold, average, zero_division)
 
     def update_state(self, y_true: np.ndarray, y_pred: np.ndarray) -> None:
         """

@@ -24,7 +24,7 @@ class F1Score(ClassificationMetric):
             zero_division (float, optional): Sets the value to be returned when there is a zero division situation (e.g., when
             there are no positive cases). Defaults to 0.0.
         """
-        super().__init__(threshold, average, zero_division)
+        super().__init__('F1score', threshold, average, zero_division)
         self.average = average
         _average = average if average != 'macro' else None
         self.precision_metric = Precision(threshold=threshold, average=_average)

@@ -24,7 +24,7 @@ class Precision(ClassificationMetric):
             zero_division (float, optional): Sets the value to be returned when there is a zero division situation (e.g., when
             there are no positive cases). Defaults to 0.0.
         """
-        super().__init__(threshold, average, zero_division)
+        super().__init__('precision', threshold, average, zero_division)
     def update_state(self, y_true: np.ndarray, y_pred: np.ndarray) -> None:
         """
         Updates the state with the true and predicted values for precision calculation.

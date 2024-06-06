@@ -7,7 +7,7 @@ from metrics import Metric
 
 # Base Accuracy class
 class AccuracyMetric(Metric, ABC):
-    def __init__(self, zero_division=0.0) -> None:
+    def __init__(self, zero_division=0.0, name='accuracy') -> None:
         """
         Initializes the Accuracy class with correct and total counts set to zero.
         Args:
@@ -21,6 +21,7 @@ class AccuracyMetric(Metric, ABC):
                              f"Expected 0.0, 1.0 or `None`. Received: {zero_division}"
                              )
         self.zero_division = zero_division
+        self.name = name
 
     def update_state(self, y_true: np.ndarray, y_pred: np.ndarray) -> None:
         """
