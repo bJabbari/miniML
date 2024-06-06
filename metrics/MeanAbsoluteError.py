@@ -6,6 +6,7 @@ from metrics import RegressionMetric
 class MeanAbsoluteError(RegressionMetric):
     def __init__(self):
         super().__init__('mae')
+
     def update_state(self, y_true: np.ndarray, y_pred: np.ndarray) -> None:
         """
         Updates the state with the true and predicted values for mean absolute error calculation.

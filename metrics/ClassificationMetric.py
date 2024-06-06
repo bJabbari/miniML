@@ -45,18 +45,17 @@ class ClassificationMetric(Metric, ABC):
         self.threshold = threshold
         if average is not None and isinstance(average, str):
             average = average.lower()
-        if not average in ['auto', 'binary', 'micro', 'macro', None]:
+        if average not in ['auto', 'binary', 'micro', 'macro', None]:
             raise ValueError("Invalid value for argument `average`. "
                              "Expected 'binary', 'micro', 'macro' or `None`. "
                              f"Received: {average}")
         self.average = average
-        if not zero_division in [0.0, 1.0, np.nan]:
+        if zero_division not in [0.0, 1.0, np.nan]:
             raise ValueError("Invalid value for argument `zero_division`. "
                              f"Expected 0.0, 1.0 or `None`. Received: {zero_division}"
                              )
         self.zero_division = zero_division
         self._problem_type = None  # 'binary', 'multiclass', or 'multilabel'
-
 
     def update_state(self, y_true: np.ndarray, y_pred: np.ndarray) -> None:
         """
@@ -81,7 +80,8 @@ class ClassificationMetric(Metric, ABC):
 
 
 # Function-based precision
-def precision(y_true: np.ndarray, y_pred: np.ndarray, threshold: float = 0.5, average: Optional[str] = 'auto', zero_division=0.0) -> Union[float, dict]:
+def precision(y_true: np.ndarray, y_pred: np.ndarray, threshold: float = 0.5, average: Optional[str] = 'auto',
+              zero_division=0.0) -> Union[float, dict]:
     """
     Computes and returns the precision for binary, multiclass, and multilabel classification problems.
     You can provide `y_pred` as either class labels or probabilities.
@@ -171,7 +171,8 @@ def precision(y_true: np.ndarray, y_pred: np.ndarray, threshold: float = 0.5, av
 
 
 # Function-based recall
-def recall(y_true: np.ndarray, y_pred: np.ndarray, threshold: float = 0.5, average: Optional[str] = 'auto', zero_division=0.0) -> Union[float, dict]:
+def recall(y_true: np.ndarray, y_pred: np.ndarray, threshold: float = 0.5, average: Optional[str] = 'auto',
+           zero_division=0.0) -> Union[float, dict]:
     """
     Computes and returns the recall for binary, multiclass, and multilabel classification problems.
     You can provide `y_pred` as either class labels or probabilities.
@@ -259,7 +260,8 @@ def recall(y_true: np.ndarray, y_pred: np.ndarray, threshold: float = 0.5, avera
 
 
 # Function-based F1 score
-def f1_score(y_true: np.ndarray, y_pred: np.ndarray, threshold: float = 0.5, average: Optional[str] = 'auto', zero_division=0.0) -> Union[float, dict]:
+def f1_score(y_true: np.ndarray, y_pred: np.ndarray, threshold: float = 0.5, average: Optional[str] = 'auto',
+             zero_division=0.0) -> Union[float, dict]:
     """
     Computes and returns the F1 score for binary, multiclass, and multilabel classification problems.
     You can provide `y_pred` as either class labels or probabilities.

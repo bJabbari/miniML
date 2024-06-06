@@ -17,7 +17,6 @@ class RegressionMetric(Metric, ABC):
         self.sum_error = 0.0
         self.count = 0
 
-
     def update_state(self, y_true: np.ndarray, y_pred: np.ndarray) -> None:
         """
         Updates the state with the true and predicted values.

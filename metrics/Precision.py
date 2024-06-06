@@ -25,6 +25,7 @@ class Precision(ClassificationMetric):
             there are no positive cases). Defaults to 0.0.
         """
         super().__init__('precision', threshold, average, zero_division)
+
     def update_state(self, y_true: np.ndarray, y_pred: np.ndarray) -> None:
         """
         Updates the state with the true and predicted values for precision calculation.
