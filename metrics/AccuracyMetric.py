@@ -7,10 +7,20 @@ from metrics import Metric
 
 # Base Accuracy class
 class AccuracyMetric(Metric, ABC):
-    def __init__(self) -> None:
-        """Initializes the Accuracy class with correct and total counts set to zero."""
+    def __init__(self, zero_division=0.0) -> None:
+        """
+        Initializes the Accuracy class with correct and total counts set to zero.
+        Args:
+            zero_division (float, optional): Sets the value to be returned when there is a zero division situation (e.g., when
+            there are no positive cases). Defaults to 0.0.
+        """
         self.correct = 0
         self.total = 0
+        if not zero_division in [0.0, 1.0, np.nan]:
+            raise ValueError("Invalid value for argument `zero_division`. "
+                             f"Expected 0.0, 1.0 or `None`. Received: {zero_division}"
+                             )
+        self.zero_division = zero_division
 
     def update_state(self, y_true: np.ndarray, y_pred: np.ndarray) -> None:
         """
@@ -29,7 +39,7 @@ class AccuracyMetric(Metric, ABC):
         Returns:
             float: The accuracy as the ratio of correct predictions to total samples.
         """
-        return self.correct / self.total if self.total > 0 else 0
+        return self.correct / self.total if self.total > 0 else self.zero_division
 
     def reset_state(self) -> None:
         """Resets the correct and total counts to zero."""
