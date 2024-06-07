@@ -50,9 +50,14 @@ class Sequential(Model):
             x = layer(x, *args, **kwargs)
         return x
 
-    def compile(self, loss='mse', optimizer='adam'):
+    def compile(self, loss='mse', optimizer='adam' , metrics=None):
         self.loss_function = miniML.losses.get(loss)
         self.optimizer = miniML.optimizers.get(optimizer)
+        self.metrics = None
+        if metrics is not None:
+            self.metrics = []
+            for metric in metrics:
+                self.metrics.append(miniML.metrics.get(metric))
         if not self._is_build:
             self.build()
 
@@ -82,15 +87,18 @@ class Sequential(Model):
             x_batches, y_batches = self.shuffle_and_batch(x, y, batch_size=batch_size, shuffle=shuffle)
             steps_per_epoch = steps_per_epoch if steps_per_epoch else len(x_batches)
             loss_total = 0
+            if self.metrics:
+                for metric in self.metrics:
+                    metric.reset_state()
 
             for i, (xb, yb) in enumerate(zip(x_batches, y_batches)):
                 if i >= steps_per_epoch:
                     break
                 if i == 0:
-                    grads_and_params, loss, loss_regularization = self.one_train_step(xb, yb)
+                    grads_and_params, loss, loss_regularization = self.one_train_step(xb, yb, verbose=0)
                 self.optimizer.update(grads_and_params, in_place=True)
                 # Compute the new value of loss after updating weights, for the current batch
-                grads_and_params, loss, loss_regularization = self.one_train_step(xb, yb)
+                grads_and_params, loss, loss_regularization = self.one_train_step(xb, yb, verbose)
 
                 seen_samples += xb.shape[0]
                 # Calculate step loss
@@ -107,6 +115,9 @@ class Sequential(Model):
                         f'\r{progress_str}'
                         f' - {total_step_time:.1f}s {avg_step_time * 1000:.2f}ms/step - Loss: {float_formatter(step_loss)}',
                         end='')
+                    if self.metrics:
+                        for metric in self.metrics:
+                            print(f' - {metric.name}: {float_formatter(metric.result())}', end='')
 
             # end of one epoch
             if verbose:
@@ -115,15 +126,27 @@ class Sequential(Model):
             step_loss = loss_total / seen_samples
             epoch_loss = None
             val_loss = None
+            train_metrics= dict()
+            val_metrics = dict()
             if compute_epoch_loss:
                 # Calculate the value of loss for the  all batches
                 epoch_loss = self.evaluate(x, y, batch_size, verbose=0)
+                if self.metrics:
+                    for metric in self.metrics:
+                        train_metrics.update({metric.name: metric.result()})
+
             if validation_data:
                 val_loss = self.evaluate(validation_data[0], validation_data[1],
                                          batch_size=validation_batch_size,
                                          steps=validation_steps,
                                          verbose=0)
-            # Calculate metrics
+                if self.metrics:
+                    for metric in self.metrics:
+                        val_metrics.update({metric.name: metric.result()})
+
+
+
+
 
             if verbose in [1, 2]:
                 epoch_end_time = time.perf_counter()
@@ -133,12 +156,20 @@ class Sequential(Model):
                 print(f' - Loss: {float_formatter(step_loss)}', end='')
                 if epoch_loss:
                     print(f' - train-Loss: {float_formatter(epoch_loss)}', end='')
+                if train_metrics:
+                    for metric_name, metric_value in train_metrics.items():
+                        print(f' - {metric_name}: {float_formatter(metric_value)}', end='')
+                elif self.metrics:
+                    for metric in self.metrics:
+                        print(f' - {metric.name}: {float_formatter(metric.result())}', end='')
                 if val_loss:
-                    print(f' - val-Loss: {float_formatter(val_loss)}')
-                else:
-                    print()
+                    print(f' - val-Loss: {float_formatter(val_loss)}', end='')
+                    if val_metrics:
+                        for metric_name, metric_value in train_metrics.items():
+                            print(f' - val_{metric_name}: {float_formatter(metric_value)}', end='')
+                print()
 
-    def one_train_step(self, xb, yb):
+    def one_train_step(self, xb, yb, verbose):
         y_pred = self.__call__(xb, training=True)
         loss = self.loss_function(y_true=yb, y_pred=y_pred)
         loss_regularization = 0
@@ -148,6 +179,9 @@ class Sequential(Model):
             loss_regularization += layer.loss
             delta, gradients_variables = layer.backward(delta)
             grads_and_params.extend(gradients_variables)
+        if self.metrics and verbose==1:
+            for metric in self.metrics:
+                metric.update_state(y_true=yb, y_pred=y_pred)
         return grads_and_params, loss, loss_regularization
 
     def evaluate(self, x, y, batch_size=None, verbose=1, steps=None):
@@ -158,6 +192,11 @@ class Sequential(Model):
         if verbose:
             epoch_start_time = time.perf_counter()
 
+        if self.metrics:
+            for metric in self.metrics:
+                metric.reset_state()
+
+
         for i, (xb, yb) in enumerate(zip(x_batches, y_batches)):
             if i >= steps:
                 break
@@ -165,6 +204,10 @@ class Sequential(Model):
             loss = self.loss_function(y_true=yb, y_pred=y_pred) * xb.shape[0]
             loss_total += loss
             seen_samples += xb.shape[0]
+            if self.metrics:
+                for metric in self.metrics:
+                    metric.update_state(y_true=yb, y_pred=y_pred)
+
             if verbose == 1:
                 step_loss = loss_total / seen_samples
                 # Calculate step time
@@ -177,6 +220,10 @@ class Sequential(Model):
                     f'\r{progress_str}'
                     f' - {total_step_time:.1f}s {avg_step_time * 1000:.2f}ms/step - Loss: {float_formatter(step_loss)}',
                     end='')
+                if self.metrics:
+                    for metric in self.metrics:
+                        print(f' - {metric.name}: {float_formatter(metric.result())}', end='')
+
         if verbose:
             total_steps_time = time.perf_counter() - epoch_start_time
             avg_step_time = total_steps_time / steps
@@ -189,7 +236,12 @@ class Sequential(Model):
             epoch_end_time = time.perf_counter()
             total_time = epoch_end_time - epoch_start_time
             print(f'\r{steps}/{steps}:'
-                  f' - {total_time:.1f}s {avg_step_time * 1000:.2f}ms/step - Loss: {float_formatter(loss_total)}')
+                  f' - {total_time:.1f}s {avg_step_time * 1000:.2f}ms/step - Loss: {float_formatter(loss_total)}'
+                  , end='')
+            if self.metrics:
+                for metric in self.metrics:
+                    print(f' - {metric.name}: {float_formatter(metric.result())}', end='')
+            print()
 
         return loss_total
 

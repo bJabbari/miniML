@@ -1,5 +1,8 @@
 from abc import ABC, abstractmethod
 from miniML.layers import InputLayer
+from miniML.metrics import Metric
+from miniML.optimizers import Optimizer
+from miniML.losses import Loss
 
 
 class Model(ABC):
@@ -8,9 +11,9 @@ class Model(ABC):
         self._layers = []
         self.training = False
         self._is_build = False
-        self.loss_function = None
-        self.optimizer = None
-        self.metrics = None
+        self.loss_function: Loss = None
+        self.optimizer: Optimizer = None
+        self.metrics: Metric = None
 
     @property
     def layers(self):
