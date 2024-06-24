@@ -3,6 +3,7 @@ from typing import Union, Optional
 from .Optimizer import Optimizer
 from .SGD import SGD
 from .Adam import Adam
+from .RMSprop import RMSprop
 
 all_optimizers = [SGD, Adam]
 all_optimizers_map = {a.__name__.lower(): a for a in all_optimizers}
